@@ -1,4 +1,4 @@
-import { EncryptedBlob } from './crypto'
+import type { EncryptedBlob } from './crypto'
 
 /**
  * 同步数据格式定义。

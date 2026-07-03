@@ -5,6 +5,7 @@ import {
     setupPassword,
     verifyPassword,
     deriveKeyFromVerification,
+    deriveKey,
 } from '../api/crypto'
 
 /**
@@ -14,11 +15,17 @@ import {
  *  - passwordHash / passwordSalt 仅用于校验用户输入是否正确
  *  - 真正的加密密钥由「用户输入 + salt」实时派生，仅保存在会话内存中
  *  - 应用重启后需用户重新输入密码（或后续可选存入 Vault 自动解锁）
+ *
+ * 多设备协同：各设备的 salt 不同（首次设置时随机生成），但 salt 随 payload
+ * 明文头部上传。解密远端数据时需用远端 payload 中的 salt 重新派生密钥，
+ * 因此会话内存中同时保留原始密码（仅内存，不落盘）。
  */
 @Injectable({ providedIn: 'root' })
 export class SyncPasswordService {
-    /** 会话内存中的派生密钥，应用重启后清空 */
+    /** 会话内存中的派生密钥（本设备 salt），应用重启后清空 */
     private memoryKey: Buffer | null = null
+    /** 会话内存中的原始密码（用于解密其他设备用不同 salt 加密的 payload），不落盘 */
+    private memoryPassword: string | null = null
 
     constructor (
         private config: ConfigService,
@@ -66,6 +73,7 @@ export class SyncPasswordService {
         this.config.store.cloudSync.passwordIterations = verification.iterations
         await this.config.save()
         this.memoryKey = key
+        this.memoryPassword = password
     }
 
     /**
@@ -81,6 +89,7 @@ export class SyncPasswordService {
             return false
         }
         this.memoryKey = deriveKeyFromVerification(password, verification)
+        this.memoryPassword = password
         return true
     }
 
@@ -89,6 +98,7 @@ export class SyncPasswordService {
      */
     lock (): void {
         this.memoryKey = null
+        this.memoryPassword = null
     }
 
     /**
@@ -107,6 +117,7 @@ export class SyncPasswordService {
      */
     async clearPassword (): Promise<void> {
         this.memoryKey = null
+        this.memoryPassword = null
         this.config.store.cloudSync.passwordHash = null
         this.config.store.cloudSync.passwordSalt = null
         this.config.store.cloudSync.lastSync = {
@@ -133,5 +144,16 @@ export class SyncPasswordService {
             iterations: cs.passwordIterations || 200000,
             hash: cs.passwordHash,
         }
+    }
+
+    /**
+     * 用当前会话密码 + 任意 salt 派生密钥
+     * 用于解密其他设备上传的 payload（其 salt 在 payload.crypto.salt 中明文携带）
+     */
+    deriveKeyWithSalt (salt: Buffer, iterations: number): Buffer {
+        if (!this.memoryPassword) {
+            throw new Error('Sync password is not unlocked')
+        }
+        return deriveKey(this.memoryPassword, salt, iterations)
     }
 }

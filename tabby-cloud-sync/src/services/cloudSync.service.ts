@@ -261,7 +261,6 @@ export class CloudSyncService {
 
             // 本地未变化则跳过
             if (lastSync.localFingerprint === localFp) {
-                this.updateStatus()
                 return false
             }
 
@@ -281,7 +280,6 @@ export class CloudSyncService {
                             const resolution = await this.resolveConflict(remotePayload, remoteMeta)
                             if (resolution === 'use-remote') {
                                 await this.applyRemotePayload(remotePayload)
-                                this.updateStatus()
                                 return false
                             } else if (resolution === 'cancel') {
                                 this.status$.next('conflict')
@@ -295,10 +293,10 @@ export class CloudSyncService {
 
             await this.doUpload(localData, localFp)
             this.syncCompleted$.next({ direction: 'upload' })
-            this.updateStatus()
             return true
         } finally {
             this.isSyncing = false
+            this.updateStatus()
         }
     }
 
@@ -326,7 +324,6 @@ export class CloudSyncService {
                         const resolution = await this.resolveConflict(remotePayload, remoteMeta)
                         if (resolution === 'use-remote') {
                             await this.applyRemotePayload(remotePayload)
-                            this.updateStatus()
                             return
                         } else if (resolution === 'cancel') {
                             this.status$.next('conflict')
@@ -338,9 +335,9 @@ export class CloudSyncService {
 
             await this.doUpload(localData, localFp)
             this.syncCompleted$.next({ direction: 'upload' })
-            this.updateStatus()
         } finally {
             this.isSyncing = false
+            this.updateStatus()
         }
     }
 
@@ -390,24 +387,23 @@ export class CloudSyncService {
             const remotePath = this.config.store.cloudSync.remotePath
             const remoteMeta = await backend.stat(remotePath, this.getBackendConfig())
             if (!remoteMeta) {
-                this.updateStatus()
                 return false
             }
 
             const lastSync = this.config.store.cloudSync.lastSync
+            // 首次同步：本地无 lastSync 记录但远端存在 → 必须下载
+            const firstTime = !lastSync.remoteETag && !lastSync.remoteModified
             // ETag 或 modifiedAt 任一变化都视为有更新
             const etagChanged = remoteMeta.etag && lastSync.remoteETag && remoteMeta.etag !== lastSync.remoteETag
             const modifiedChanged = remoteMeta.modifiedAt && lastSync.remoteModified
                 && remoteMeta.modifiedAt.toISOString() > lastSync.remoteModified
-            if (!etagChanged && !modifiedChanged) {
-                this.updateStatus()
+            if (!firstTime && !etagChanged && !modifiedChanged) {
                 return false
             }
 
             // 下载 payload
             const payload = await this.downloadPayload()
             if (!payload) {
-                this.updateStatus()
                 return false
             }
 
@@ -415,16 +411,13 @@ export class CloudSyncService {
             if (payload.sourceDevice === this.config.store.cloudSync.deviceId) {
                 await this.applyRemotePayload(payload)
                 this.syncCompleted$.next({ direction: 'download' })
-                this.updateStatus()
                 return true
             }
 
-            // 多设备并发：判断是否需要 prompt
+            // 多设备并发：仅当本地有未同步修改时才需冲突解决，否则直接下载
             const localChanged = this.isLocalChanged()
-            const strategy = this.config.store.cloudSync.conflictStrategy || 'prompt'
-            const forcePrompt = this.config.store.cloudSync.forcePromptOnMultiDevice
 
-            if (localChanged || strategy === 'prompt' || forcePrompt) {
+            if (localChanged) {
                 const resolution = await this.resolveConflict(payload, remoteMeta)
                 if (resolution === 'use-remote') {
                     await this.applyRemotePayload(payload)
@@ -441,15 +434,15 @@ export class CloudSyncService {
                     return false
                 }
             } else {
-                // strategy === 'newest' 且未强制 prompt 且本地未变 → 单向更新，直接下载
+                // 本地无修改，直接下载远端最新
                 await this.applyRemotePayload(payload)
                 this.syncCompleted$.next({ direction: 'download' })
             }
 
-            this.updateStatus()
             return true
         } finally {
             this.isSyncing = false
+            this.updateStatus()
         }
     }
 
@@ -463,7 +456,6 @@ export class CloudSyncService {
             this.status$.next('syncing')
             const payload = await this.downloadPayload()
             if (!payload) {
-                this.updateStatus()
                 return
             }
 
@@ -473,8 +465,6 @@ export class CloudSyncService {
                 if (resolution !== 'use-remote') {
                     if (resolution === 'cancel') {
                         this.status$.next('conflict')
-                    } else {
-                        this.updateStatus()
                     }
                     return
                 }
@@ -482,9 +472,9 @@ export class CloudSyncService {
 
             await this.applyRemotePayload(payload)
             this.syncCompleted$.next({ direction: 'download' })
-            this.updateStatus()
         } finally {
             this.isSyncing = false
+            this.updateStatus()
         }
     }
 
@@ -510,9 +500,11 @@ export class CloudSyncService {
 
     /**
      * 解密 + 合并远端 payload 到本地
+     * 注意：用远端 payload 携带的 salt 派生密钥（各设备 salt 不同）
      */
     private async applyRemotePayload (payload: SyncPayload): Promise<void> {
-        const key = this.passwordService.getKey()
+        const salt = Buffer.from(payload.crypto.salt, 'base64')
+        const key = this.passwordService.deriveKeyWithSalt(salt, payload.crypto.iterations)
         const blob = extractEncryptedBlob(payload)
         const decrypted = decrypt(blob, key)
         const yamlStr = decrypted.toString('utf8')
@@ -543,8 +535,12 @@ export class CloudSyncService {
 
     /**
      * 本地是否有未同步修改
+     * 首次同步（无 lastSync.localFingerprint）不算"本地有修改"，避免新设备首次下载被误判为冲突
      */
     private isLocalChanged (): boolean {
+        if (!this.config.store.cloudSync.lastSync.localFingerprint) {
+            return false
+        }
         const localFp = this.getLocalFingerprint()
         return this.config.store.cloudSync.lastSync.localFingerprint !== localFp
     }
@@ -620,6 +616,10 @@ export class CloudSyncService {
     }
 
     private updateStatus (): void {
+        // 若已显式进入 conflict 状态，不覆盖（等用户解决后由 resolveConflictWith 流程更新）
+        if (this.status$.value === 'conflict') {
+            return
+        }
         if (!this.isEnabled()) {
             this.status$.next('disabled')
             return

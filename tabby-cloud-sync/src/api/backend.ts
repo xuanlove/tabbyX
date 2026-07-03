@@ -1,4 +1,4 @@
-import { RemoteMeta } from './payload'
+import type { RemoteMeta } from './payload'
 
 /**
  * 同步后端抽象接口。
