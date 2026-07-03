@@ -59,7 +59,12 @@ export default class CloudSyncModule {
         private cloudSync: CloudSyncService,
         private passwordService: SyncPasswordService,
         private backendRegistry: BackendRegistryService,
-    ) { }
+    ) {
+        // 引用以触发服务实例化（构造函数副作用：注册监听器）
+        void this.cloudSync
+        void this.passwordService
+        void this.backendRegistry
+    }
 }
 
 export * from './api'

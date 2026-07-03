@@ -461,7 +461,13 @@ export class CloudSyncService {
 
             // 本地有未同步修改时弹窗确认
             if (this.isLocalChanged()) {
-                const resolution = await this.resolveConflict(payload, await this.getRemoteMeta())
+                const remoteMeta = await this.getRemoteMeta()
+                if (!remoteMeta) {
+                    await this.applyRemotePayload(payload)
+                    this.syncCompleted$.next({ direction: 'download' })
+                    return
+                }
+                const resolution = await this.resolveConflict(payload, remoteMeta)
                 if (resolution !== 'use-remote') {
                     if (resolution === 'cancel') {
                         this.status$.next('conflict')

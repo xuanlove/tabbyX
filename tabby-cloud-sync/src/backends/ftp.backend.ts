@@ -63,7 +63,6 @@ export class FTPBackend extends SyncBackend {
     }
 
     async upload (path: string, data: Buffer, config: FTPBackendConfig): Promise<RemoteMeta> {
-        const ftp = require('basic-ftp')
         // 上传到 .tmp 再 rename，FTP 不支持原子 rename 时直接覆盖
         const tmpPath = `${path}.tmp`
         await this.withClient(config, async client => {

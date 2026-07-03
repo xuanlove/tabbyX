@@ -86,6 +86,7 @@ export default options => {
                 {
                     test: /\.(m?)js$/,
                     loader: 'babel-loader',
+                    exclude: /node_modules[\\/]ansi-color/,
                     options: {
                         plugins: [linkerPlugin],
                         compact: false,
