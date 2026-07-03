@@ -1,0 +1,29 @@
+{
+  "name": "tabby-cloud-sync",
+  "version": "1.0.231-nightly.0",
+  "description": "Encrypted, compressed cloud sync for Tabby connection configs (WebDAV/FTP/FTPS/S3)",
+  "keywords": [
+    "tabby-builtin-plugin"
+  ],
+  "main": "dist/index.js",
+  "typings": "typings/index.d.ts",
+  "scripts": {
+    "build": "webpack --progress --color --display-modules",
+    "watch": "webpack --progress --color --watch"
+  },
+  "files": [
+    "dist",
+    "typings"
+  ],
+  "author": "Tabby Developers",
+  "license": "MIT",
+  "peerDependencies": {
+    "tabby-core": "*",
+    "tabby-settings": "*"
+  },
+  "devDependencies": {
+    "webdav": "^5.0.0",
+    "basic-ftp": "^5.0.5",
+    "@aws-sdk/client-s3": "^3.400.0"
+  }
+}

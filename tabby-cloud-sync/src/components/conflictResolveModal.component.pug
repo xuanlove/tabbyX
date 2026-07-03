@@ -1,0 +1,66 @@
+h3.modal-header.m-0.pb-0 Config conflict detected
+
+.modal-body
+    .mb-3 The remote config was updated by another device.
+    .mb-3 Both sides have unsynced changes — overwriting will lose one side's changes.
+
+    .card.mb-2
+        .card-body
+            .d-flex
+                i.fas.fa-cloud.me-2
+                div
+                    strong Remote
+                    .text-muted.small {{ formatDate(info.remote.modifiedAt) }} — {{ info.remote.deviceName || 'unknown device' }}
+
+    .card.mb-3
+        .card-body
+            .d-flex
+                i.fas.fa-laptop.me-2
+                div
+                    strong Local (this device)
+                    .text-muted.small {{ formatDate(info.local.modifiedAt) }} — {{ info.local.deviceName || 'unknown device' }}
+
+    .mb-2 Choose how to resolve:
+    .form-check
+        input.form-check-input(
+            type='radio',
+            name='choice',
+            value='use-remote',
+            [(ngModel)]='choice',
+            id='use-remote',
+        )
+        label.form-check-label(for='use-remote')
+            | Use remote — download and overwrite local changes
+    .form-check
+        input.form-check-input(
+            type='radio',
+            name='choice',
+            value='use-local',
+            [(ngModel)]='choice',
+            id='use-local',
+        )
+        label.form-check-label(for='use-local')
+            | Use local — upload and overwrite remote changes
+    .form-check
+        input.form-check-input(
+            type='radio',
+            name='choice',
+            value='cancel',
+            [(ngModel)]='choice',
+            id='cancel',
+        )
+        label.form-check-label(for='cancel')
+            | Cancel — do not sync, mark as conflict pending
+
+    .form-check.mt-3
+        input.form-check-input(
+            type='checkbox',
+            [(ngModel)]='applyToSession',
+            id='applyToSession',
+        )
+        label.form-check-label(for='applyToSession')
+            | Apply this choice to all conflicts this session
+
+.modal-footer
+    button.btn.btn-primary((click)='ok()') OK
+    button.btn.btn-secondary((click)='cancel()') Cancel

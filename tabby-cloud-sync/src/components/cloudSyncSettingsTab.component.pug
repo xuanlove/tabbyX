@@ -1,0 +1,321 @@
+h3.mb-3 Cloud Sync
+
+.alert.alert-info
+    | Encrypted, compressed cloud sync for connection configs.
+    | Supports WebDAV / FTP / FTPS / S3. Data is end-to-end encrypted with your sync password.
+
+//- 同步密码区域
+.form-line
+    .header
+        .title Sync password
+    div(*ngIf='!passwordSet')
+        .text-muted Not set yet
+        button.btn.btn-primary.mt-2((click)='setupPassword()') Set password
+    div(*ngIf='passwordSet')
+        div(*ngIf='passwordUnlocked')
+            span.text-success
+                i.fas.fa-check
+            | Unlocked
+        div(*ngIf='!passwordUnlocked')
+            span.text-warning
+                i.fas.fa-lock
+            | Locked — enter password to unlock
+        .mt-2
+            button.btn.btn-secondary.btn-sm.me-1(
+                *ngIf='!passwordUnlocked',
+                (click)='unlock()',
+            ) Unlock
+            button.btn.btn-secondary.btn-sm.me-1(
+                *ngIf='passwordUnlocked',
+                (click)='changePassword()',
+            ) Change password
+            button.btn.btn-danger.btn-sm(
+                (click)='clearPassword()',
+            ) Clear password
+
+//- 后端选择
+.form-line
+    .header
+        .title Storage backend
+    .btn-group
+        button.btn.btn-outline-secondary(
+            *ngFor='let b of backends',
+            [class.active]='config.store.cloudSync.backend === b.id',
+            (click)='selectBackend(b.id)',
+        ) {{ b.displayName }}
+
+//- WebDAV 配置
+ng-container(*ngIf='config.store.cloudSync.backend === "webdav"')
+    .form-line
+        .header
+            .title WebDAV URL
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.webdav.url',
+            (change)='config.save()',
+            placeholder='https://dav.example.com/remote.php/dav/files/user/',
+        )
+    .form-line
+        .header
+            .title Username
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.webdav.username',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Password
+        input.form-control(
+            type='password',
+            [(ngModel)]='config.store.cloudSync.backends.webdav.password',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Base path
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.webdav.basePath',
+            (change)='config.save()',
+        )
+
+//- FTP/FTPS 配置
+ng-container(*ngIf='config.store.cloudSync.backend === "ftp"')
+    .form-line
+        .header
+            .title Host
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.ftp.host',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Port
+        input.form-control(
+            type='number',
+            [(ngModel)]='config.store.cloudSync.backends.ftp.port',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Username
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.ftp.username',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Password
+        input.form-control(
+            type='password',
+            [(ngModel)]='config.store.cloudSync.backends.ftp.password',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Mode
+        toggle(
+            [(ngModel)]='config.store.cloudSync.backends.ftp.secure',
+            (ngModelChange)='config.save()',
+        )
+        span.ms-2(*ngIf='config.store.cloudSync.backends.ftp.secure') FTPS (TLS)
+        span.ms-2(*ngIf='!config.store.cloudSync.backends.ftp.secure') Plain FTP
+
+//- S3 配置
+ng-container(*ngIf='config.store.cloudSync.backend === "s3"')
+    .form-line
+        .header
+            .title Endpoint (optional, for MinIO etc.)
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.s3.endpoint',
+            (change)='config.save()',
+            placeholder='minio.example.com:9000',
+        )
+    .form-line
+        .header
+            .title Region
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.s3.region',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Bucket
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.s3.bucket',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Access key ID
+        input.form-control(
+            type='text',
+            [(ngModel)]='config.store.cloudSync.backends.s3.accessKeyId',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Secret access key
+        input.form-control(
+            type='password',
+            [(ngModel)]='config.store.cloudSync.backends.s3.secretAccessKey',
+            (change)='config.save()',
+        )
+    .form-line
+        .header
+            .title Path style
+        toggle(
+            [(ngModel)]='config.store.cloudSync.backends.s3.forcePathStyle',
+            (ngModelChange)='config.save()',
+        )
+        span.ms-2.text-muted.small (MinIO needs this)
+
+//- 测试连接
+.form-line(*ngIf='config.store.cloudSync.backend')
+    button.btn.btn-secondary(
+        (click)='testConnection()',
+        [disabled]='testingConnection',
+    )
+        i.fas.fa-fw.fa-circle-notch.fa-spin(*ngIf='testingConnection')
+        i.fas.fa-fw.fa-plug(*ngIf='!testingConnection')
+        span.ms-2 Test connection
+    span.ms-2(*ngIf='connectionResult')
+        i.fas.fa-fw.fa-check.text-success(*ngIf='connectionResult.ok')
+        i.fas.fa-fw.fa-exclamation-triangle.text-danger(*ngIf='!connectionResult.ok')
+        span.text-success(*ngIf='connectionResult.ok') OK
+        span.text-danger(*ngIf='!connectionResult.ok') {{ connectionResult.message }}
+
+//- 远端路径
+.form-line
+    .header
+        .title Remote path
+    input.form-control(
+        type='text',
+        [(ngModel)]='config.store.cloudSync.remotePath',
+        (change)='config.save()',
+    )
+
+//- 同步内容开关
+.form-line
+    .header
+        .title Sync content
+    .form-check
+        input.form-check-input(
+            type='checkbox',
+            [(ngModel)]='config.store.cloudSync.syncParts.profiles',
+            (change)='config.save()',
+            id='sync-profiles',
+        )
+        label.form-check-label(for='sync-profiles') Profiles & profile groups
+    .form-check
+        input.form-check-input(
+            type='checkbox',
+            [(ngModel)]='config.store.cloudSync.syncParts.knownHosts',
+            (change)='config.save()',
+            id='sync-knownhosts',
+        )
+        label.form-check-label(for='sync-knownhosts') SSH known_hosts
+    .form-check
+        input.form-check-input(
+            type='checkbox',
+            [(ngModel)]='config.store.cloudSync.syncParts.vaultSecrets',
+            (change)='config.save()',
+            id='sync-vault',
+        )
+        label.form-check-label(for='sync-vault') Vault connection credentials (sensitive)
+
+//- 同步策略
+.form-line
+    .header
+        .title Sync strategy
+    .form-check
+        input.form-check-input(
+            type='checkbox',
+            [(ngModel)]='config.store.cloudSync.auto',
+            (change)='config.save()',
+            id='sync-auto',
+        )
+        label.form-check-label(for='sync-auto') Auto sync on config changes
+    .form-line
+        .header
+            .title Polling interval (seconds)
+        input.form-control.w-25(
+            type='number',
+            [(ngModel)]='config.store.cloudSync.autoSyncInterval',
+            (change)='config.save()',
+        )
+    .header.mt-2
+        .title Conflict strategy
+    select.form-control.w-50(
+        [(ngModel)]='config.store.cloudSync.conflictStrategy',
+        (change)='config.save()',
+    )
+        option(value='prompt') Prompt (recommended)
+        option(value='newest') Use newest
+        option(value='manual') Manual
+    .form-check.mt-2
+        input.form-check-input(
+            type='checkbox',
+            [(ngModel)]='config.store.cloudSync.forcePromptOnMultiDevice',
+            (change)='config.save()',
+            id='force-prompt',
+        )
+        label.form-check-label(for='force-prompt') Force prompt on multi-device conflicts
+
+//- 状态与操作
+.form-line(*ngIf='passwordSet && config.store.cloudSync.backend')
+    .header
+        .title Status
+    div
+        i.fas.fa-fw(*ngIf='status === "disabled"').fa-circle.text-muted
+        i.fas.fa-fw(*ngIf='status === "idle"').fa-circle.text-success
+        i.fas.fa-fw(*ngIf='status === "syncing"').fa-circle-notch.fa-spin.text-warning
+        i.fas.fa-fw(*ngIf='status === "error"').fa-exclamation-triangle.text-danger
+        i.fas.fa-fw(*ngIf='status === "conflict"').fa-exclamation-circle.text-warning
+        i.fas.fa-fw(*ngIf='status === "locked"').fa-lock.text-warning
+        span.ms-2 {{ status }}
+
+    .alert.alert-danger.mt-2(*ngIf='lastError')
+        i.fas.fa-exclamation-triangle
+        span.ms-2 {{ lastError }}
+        button.btn.btn-sm.btn-link((click)='cloudSync.clearError()') dismiss
+
+    .mt-2
+        button.btn.btn-secondary.btn-sm.me-1(
+            *ngIf='!config.store.cloudSync.enabled',
+            (click)='enableSync()',
+        ) Enable sync
+        button.btn.btn-secondary.btn-sm.me-1(
+            *ngIf='config.store.cloudSync.enabled',
+            (click)='disableSync()',
+        ) Disable sync
+        button.btn.btn-primary.btn-sm.me-1(
+            *ngIf='config.store.cloudSync.enabled && passwordUnlocked',
+            (click)='uploadNow()',
+            [disabled]='syncing',
+        )
+            i.fas.fa-arrow-up
+            span.ms-2 Upload now
+        button.btn.btn-primary.btn-sm(
+            *ngIf='config.store.cloudSync.enabled && passwordUnlocked',
+            (click)='downloadNow()',
+            [disabled]='syncing',
+        )
+            i.fas.fa-arrow-down
+            span.ms-2 Download now
+
+//- 上次同步信息
+.form-line(*ngIf='config.store.cloudSync.enabled && config.store.cloudSync.lastSync.localModified')
+    .header
+        .title Last sync
+    .text-muted.small
+        div Local: {{ config.store.cloudSync.lastSync.localModified }}
+        div Local device: {{ config.store.cloudSync.deviceName }}
+        div Remote: {{ config.store.cloudSync.lastSync.remoteModified || 'never' }}
+        div Remote device: {{ config.store.cloudSync.lastSync.remoteDeviceName || 'unknown' }}

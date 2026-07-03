@@ -63,6 +63,7 @@ tabby
 ├─ clink                                # Clink distribution, for Windows
 ├─ scripts                              # Maintenance scripts
 ├─ tabby-community-color-schemes     # Plugin that provides color schemes
+├─ tabby-cloud-sync                  # Plugin that syncs connection configs to WebDAV/FTP/FTPS/S3
 ├─ tabby-core                        # Plugin that provides base UI and tab management
 ├─ tabby-electron                    # Plugin that provides Electron-specific functions
 ├─ tabby-local                       # Plugin that provides local shells and profiles
