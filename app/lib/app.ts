@@ -295,7 +295,7 @@ export class Application {
     }
 
     private useBuiltinGraphics (): void {
-        if (process.platform === 'win32') {
+        if (process.platform === 'win32' && wnr) {
             const keyPath = 'SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences'
             const valueName = app.getPath('exe')
             if (!wnr.getRegistryValue(wnr.HK.CU, keyPath, valueName)) {
