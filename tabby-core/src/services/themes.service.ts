@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@angular/core'
 import { Subject, Observable } from 'rxjs'
-import * as Color from 'color'
+import Color from 'color'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ColorInstance = any
 import { ConfigService } from '../services/config.service'
 import { TerminalColorScheme, Theme } from '../api/theme'
 import { PlatformService, PlatformTheme } from '../api/platform'
@@ -172,13 +174,13 @@ export class ThemesService {
         document.body.classList.toggle('no-animations', !this.getConfigStoreOrDefaults().accessibility.animations)
     }
 
-    private ensureContrast (color: Color, against: Color): Color {
+    private ensureContrast (color: ColorInstance, against: ColorInstance): ColorInstance {
         const a = this.increaseContrast(color, against, 1.1)
         const b = this.increaseContrast(color, against, 0.9)
         return a.contrast(against) > b.contrast(against) ? a : b
     }
 
-    private increaseContrast (color: Color, against: Color, step=1.1): Color {
+    private increaseContrast (color: ColorInstance, against: ColorInstance, step=1.1): ColorInstance {
         color = color.hsl()
         color.color[2] = Math.max(color.color[2], 0.01)
         while (

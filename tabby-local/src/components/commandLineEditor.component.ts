@@ -33,8 +33,8 @@ export class CommandLineEditorComponent {
 
     parseCommand () {
         const args = shellQuote.parse(this.command)
-        this.model.command = args[0] ?? ''
-        this.model.args = args.slice(1)
+        this.model.command = String(args[0] ?? '')
+        this.model.args = args.slice(1).map(String)
     }
 
     updateCommand () {

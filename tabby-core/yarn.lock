@@ -2,6 +2,25 @@
 # yarn lockfile v1
 
 
+"@types/color-convert@1":
+  version "1.9.0"
+  resolved "https://registry.npmjs.org/@types/color-convert/-/color-convert-1.9.0.tgz"
+  integrity sha512-OKGEfULrvSL2VRbkl/gnjjgbbF7ycIlpSsX7Nkab4MOWi5XxmgBYvuiQ7lcCFY5cPDz7MUNaKgxte2VRmtr4Fg==
+  dependencies:
+    "@types/color-name" "*"
+
+"@types/color-name@*":
+  version "2.0.0"
+  resolved "https://registry.npmjs.org/@types/color-name/-/color-name-2.0.0.tgz"
+  integrity sha512-63mTjolMJv75upGaUbT6J3lRDWl6pETPQsaWni9w3dMArhNBpgtHkX8ISb9zLV3YYLPA/SMk8ZGALa3k9WY/aQ==
+
+"@types/color@^3.0.7":
+  version "3.0.7"
+  resolved "https://registry.npmjs.org/@types/color/-/color-3.0.7.tgz"
+  integrity sha512-e/ecxz2EGJhUEaoeFa9Xx6ayIkBFQ5bwKgOWzmrEtP+ApYB5ou+eOB71DasFsn3qCKzIPrbi/NKdM8lI0tnGUQ==
+  dependencies:
+    "@types/color-convert" "1"
+
 abort-controller@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/abort-controller/-/abort-controller-3.0.0.tgz"

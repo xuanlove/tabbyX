@@ -37,5 +37,8 @@
     "@angular/platform-browser": "^15",
     "@angular/platform-browser-dynamic": "^15",
     "rxjs": "^7"
+  },
+  "dependencies": {
+    "@types/color": "^3.0.7"
   }
 }

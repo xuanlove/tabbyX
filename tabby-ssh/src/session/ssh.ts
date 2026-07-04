@@ -385,7 +385,7 @@ export class SSHSession {
             this.emitServiceMessage(colors.bgBlue.black(' Proxy command ') + ` Using ${this.profile.options.proxyCommand}`)
 
             const argv = shellQuote.parse(this.profile.options.proxyCommand)
-            transport = await russh.SshTransport.newCommand(argv[0], argv.slice(1))
+            transport = await russh.SshTransport.newCommand(String(argv[0]), argv.slice(1).map(String))
         } else if (this.jumpChannel) {
             transport = await russh.SshTransport.newSshChannel(this.jumpChannel.take())
             this.jumpChannel = null
