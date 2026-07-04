@@ -26,7 +26,7 @@ vars.builtinPlugins.forEach(plugin => {
 
 
     log.info('rebuild', 'native')
-    if (fs.existsSync('node_modules')) {
+    if (process.env.SKIP_NATIVE_REBUILD !== '1' && fs.existsSync('node_modules')) {
         rebuild({
             buildPath: path.resolve('.'),
             electronVersion: vars.electronVersion,

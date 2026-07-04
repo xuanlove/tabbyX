@@ -15,7 +15,11 @@ import { parseTabbyURL, isTabbyURL } from './urlHandler'
 
 let DwmEnableBlurBehindWindow: any = null
 if (process.platform === 'win32') {
-    DwmEnableBlurBehindWindow = require('@tabby-gang/windows-blurbehind').DwmEnableBlurBehindWindow
+    try {
+        DwmEnableBlurBehindWindow = require('@tabby-gang/windows-blurbehind').DwmEnableBlurBehindWindow
+    } catch (e) {
+        console.warn('Failed to load @tabby-gang/windows-blurbehind, blur behind effect will be unavailable:', e)
+    }
 }
 
 export interface WindowOptions {
